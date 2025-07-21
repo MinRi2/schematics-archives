@@ -34,6 +34,7 @@ async function run() {
         lastData.setData(
             savedData.data.map((meta) => SchematicData.copy(meta))
         );
+        await retainValidData(outPath, lastData);
     }
 
     const excelSheetsData = await readExcel();
@@ -45,7 +46,7 @@ async function run() {
 
     await genSchematics(outPath, data, lastData);
     await deleteOldSchematics(outPath, data, lastData);
-    await saveData(savedDataPath, data);
+    if (anyChange(data, lastData)) await saveData(savedDataPath, data);
 }
 
 async function fetchSchematicsExcel() {
@@ -135,7 +136,9 @@ async function parseExcelData(excelSheetsData: ExcelSheetsData) {
             return;
         }
 
-        sheetData.forEach((rowData) => {
+        sheetData.forEach((rowData, index) => {
+            if (index == 0) return; // skip title
+
             const [author, name] = rowData;
             const base64Raw = rowData[base64Index];
 
@@ -210,6 +213,17 @@ async function genSchematics(
     console.log("Saved schematics:", count);
 }
 
+async function retainValidData(basePath: string, data: SchematicDataMap) {
+    await Promise.all(
+        Array.from(data.values()).map(async (schematicData) => {
+            const file = await Bun.file(schematicData.getFilePath(basePath));
+            if (!(await file.exists())) {
+                data.deleteData(schematicData);
+            }
+        })
+    );
+}
+
 async function deleteOldSchematics(
     fromPath: string,
     dataMap: SchematicDataMap,
@@ -254,4 +268,23 @@ async function saveData(outPath: string, data: SchematicDataMap) {
     };
 
     await Bun.write(outPath, JSON.stringify(dataObject));
+}
+
+function anyChange(data: SchematicDataMap, oldData: SchematicDataMap) {
+    if (data.size != oldData.size) return true;
+
+    const keys = Array.from(data.keys());
+    for (let i = 0; i < keys.length; i++) {
+        const key = keys[i]!;
+
+        const other = oldData.get(key);
+        if (!other) return true;
+
+        const schematicData = data.get(key)!;
+        if (!schematicData.equals(other)) {
+            return true;
+        }
+    }
+
+    return false;
 }
