@@ -19,7 +19,7 @@ jobs:
               env:
                   QQ_DOC_COOKIES: ${{ secrets.QQ_DOC_COOKIES }}
               run: |
-                  bun ./dist/index.ts
+                  bun ./dist/index.js
 
             - name: Check changes
               run: git diff --quiet || echo "ANY_CHANGES=true" >> $GITHUB_ENV
