@@ -1,40 +1,40 @@
 name: Fetch Schematics
 
 on:
-  schedule:
-    - cron: '0 6 * * *' 
+    schedule:
+        - cron: "0 6 * * *"
 
-  workflow_dispatch:
+    workflow_dispatch:
 
 jobs:
-  fetch:
-    runs-on: ubuntu-latest
+    fetch:
+        runs-on: ubuntu-latest
 
-    steps:
-      - uses: actions/checkout@v4
-      - uses: oven-sh/setup-bun@v2
-        with:
-          bun-version: latest
-      - name: Run script
-        env:
-          QQ_DOC_COOKIES: ${{ secrets.QQ_DOC_COOKIES }}
-        run: |
-          bun ./dist/index.js
+        steps:
+            - uses: actions/checkout@v4
+            - uses: oven-sh/setup-bun@v2
+              with:
+                  bun-version: latest
+            - name: Run script
+              env:
+                  QQ_DOC_COOKIES: ${{ secrets.QQ_DOC_COOKIES }}
+              run: |
+                  bun ./src/index.ts
 
-      - name: Check changes
-        run: git diff --quiet || echo "ANY_CHANGES=true" >> $GITHUB_ENV
+            - name: Check changes
+              run: git diff --quiet || echo "ANY_CHANGES=true" >> $GITHUB_ENV
 
-      - name: Commit files
-        if: env.ANY_CHANGES == 'true'
-        run: |
-          git config --local user.email "actions@github.com"
-          git config --local user.name "Github Actions[bot]"
-          git add .
-          git commit -m "Auto Update"
+            - name: Commit files
+              if: env.ANY_CHANGES == 'true'
+              run: |
+                  git config --local user.email "actions@github.com"
+                  git config --local user.name "Github Actions[bot]"
+                  git add .
+                  git commit -m "Auto Update"
 
-      - name: Push changes
-        if: env.ANY_CHANGES == 'true'
-        uses: ad-m/github-push-action@master
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          branch: ${{ github.ref }}
+            - name: Push changes
+              if: env.ANY_CHANGES == 'true'
+              uses: ad-m/github-push-action@master
+              with:
+                  github_token: ${{ secrets.GITHUB_TOKEN }}
+                  branch: ${{ github.ref }}
