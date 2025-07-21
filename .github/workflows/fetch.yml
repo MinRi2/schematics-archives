@@ -30,7 +30,7 @@ jobs:
                   git config --local user.email "actions@github.com"
                   git config --local user.name "Github Actions[bot]"
                   git add .
-                  git commit -m "Auto Update"
+                  git commit -m "🍱 Auto Update"
 
             - name: Push changes
               if: env.ANY_CHANGES == 'true'
