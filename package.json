@@ -1,6 +1,7 @@
 {
     "scripts": {
-        "start": "bun ./src/index.ts"
+        "start": "bun ./src/index.ts",
+        "build": "bun build ./src/index.ts --minify --outdir ./dist --target bun"
     },
     "dependencies": {
         "node-xlsx": "^0.24.0"
