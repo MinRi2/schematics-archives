@@ -50,6 +50,8 @@ async function run() {
         await genSchematics(outPath, data, lastData);
         await deleteOldSchematics(outPath, data, lastData);
         await saveData(savedDataPath, data);
+    } else {
+        console.log("No schematics updated!!");
     }
 }
 
