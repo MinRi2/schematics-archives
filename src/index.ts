@@ -19,7 +19,7 @@ const context: ContextData = {
     data: new SchematicDataMap(),
 };
 
-const DOC_ID = "300000000%24AaAsqrinCIuL";
+const DOC_ID = "300000000%24TshKyHrmMlQR";
 
 run();
 
@@ -171,11 +171,14 @@ async function parseExcelData(excelSheetsData: ExcelSheetsData) {
     return schematicsData;
 
     function autoDetectBase64Column(data: string[][]): number {
-        const byTitle = data[0]?.findIndex((str) => str === "蓝图代码");
-        if (byTitle) return byTitle;
-
-        const byContent = data[1]?.findIndex((str) => isValidBase64(str));
-        return byContent ?? -1;
+        const detectRows = Math.min(8, data.length);
+        for (let i = 0; i < detectRows; i++) {
+            const columnIndex = data[i]?.findIndex(
+                (str) => str && (str === "蓝图代码" || isValidBase64(str))
+            );
+            if (columnIndex && columnIndex != -1) return columnIndex;
+        }
+        return -1;
     }
 
     function isValidBase64(str: string): boolean {
