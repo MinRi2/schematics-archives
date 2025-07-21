@@ -44,9 +44,11 @@ async function run() {
     }
     data.setData(await parseExcelData(excelSheetsData));
 
-    await genSchematics(outPath, data, lastData);
+    const any = anyChange(data, lastData);
+
+    if (any) await genSchematics(outPath, data, lastData);
     await deleteOldSchematics(outPath, data, lastData);
-    if (anyChange(data, lastData)) await saveData(savedDataPath, data);
+    if (any) await saveData(savedDataPath, data);
 }
 
 async function fetchSchematicsExcel() {
