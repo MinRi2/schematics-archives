@@ -1,8 +1,4 @@
 {
-    "schematics": [
-        "核心双T4",
-        "核心单T5",
-        "核心单t5"
-    ],
+    "schematics": [],
     "authors": []
 }

@@ -85,11 +85,7 @@ async function fetchSchematicsExcel() {
         }
     );
 
-    resp = await fetch(data.file_url!, {
-        method: "GET",
-    });
-
-    return await resp.arrayBuffer();
+    return await (await fetch(data.file_url!)).arrayBuffer();
 }
 
 async function readExcel() {
@@ -129,14 +125,26 @@ async function parseExcelData(excelSheetsData: ExcelSheetsData) {
         const {name: category, data} = workSheet;
 
         const sheetData = data as string[][];
-        sheetData.forEach((rowData) => {
-            const [author, name, picture, base64, technology] = rowData;
+        const base64Index = autoDetectBase64Column(sheetData);
 
-            if (!author || !name) {
+        if (base64Index == -1) {
+            console.error(
+                "Skipping: Schematic base64 code not found in sheet",
+                category
+            );
+            return;
+        }
+
+        sheetData.forEach((rowData) => {
+            const [author, name] = rowData;
+            const base64Raw = rowData[base64Index];
+
+            if (!name || !base64Raw || base64Raw.length == 0) {
                 return;
             }
 
-            if (!base64 || !isValidBase64(base64)) {
+            const base64 = base64Raw.replace(/\s/g, "");
+            if (!isValidBase64(base64)) {
                 console.error("Invalid schematic", name);
                 return;
             }
@@ -147,19 +155,28 @@ async function parseExcelData(excelSheetsData: ExcelSheetsData) {
                 (author &&
                     blacklist.authors.findIndex((a) => a === author) !== -1)
             ) {
+                console.log("Detect blacklist schematic:", name);
                 return;
             }
 
             schematicsData.push(
-                new SchematicData(category, name, author, base64)
+                new SchematicData(category, name, author ?? "unknown", base64)
             );
         });
     });
 
     return schematicsData;
 
-    function isValidBase64(str: string) {
-        return /^[A-Za-z0-9+/]+={0,2}$/.test(str) && str.length % 4 === 0;
+    function autoDetectBase64Column(data: string[][]): number {
+        const byTitle = data[0]?.findIndex((str) => str === "蓝图代码");
+        if (byTitle) return byTitle;
+
+        const byContent = data[1]?.findIndex((str) => isValidBase64(str));
+        return byContent ?? -1;
+    }
+
+    function isValidBase64(str: string): boolean {
+        return str.length % 4 === 0 && /^[A-Za-z0-9+/]+={0,2}$/.test(str);
     }
 }
 
