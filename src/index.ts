@@ -44,7 +44,7 @@ async function run() {
     data.setData(await parseExcelData(excelSheetsData));
 
     await genSchematics(outPath, data, lastData);
-    await cleanSchematics(outPath, data, lastData);
+    await deleteOldSchematics(outPath, data, lastData);
     await saveData(savedDataPath, data);
 }
 
@@ -169,53 +169,53 @@ async function genSchematics(
     lastDataMap: SchematicDataMap
 ) {
     let count = 0;
-    const jobs = Array.from(dataMap.values()).map(async (data) => {
-        if (lastDataMap.getData(data.category, data.name)?.equals(data)) {
-            return;
-        }
-        const {base64} = data;
-        const fileName = data.getFileName();
-        const filePath = data.getFilePath(fromPath);
+    await Promise.all(
+        Array.from(dataMap.values()).map(async (data) => {
+            if (lastDataMap.getData(data.category, data.name)?.equals(data)) {
+                return;
+            }
+            const {base64} = data;
+            const fileName = data.getFileName();
+            const filePath = data.getFilePath(fromPath);
 
-        const buffer = Buffer.from(base64, "base64");
-        const file = Bun.file(filePath);
+            const buffer = Buffer.from(base64, "base64");
+            const file = await Bun.file(filePath);
 
-        await Bun.write(file, buffer);
+            await Bun.write(file, buffer);
 
-        count++;
-        console.log("Save schematic", fileName);
-    });
-
-    await Promise.all(jobs);
+            count++;
+            console.log("Save schematic", fileName);
+        })
+    );
 
     console.log("All schematics saved to", context.outPath);
     console.log("Total schematics:", dataMap.size);
     console.log("Saved schematics:", count);
 }
 
-async function cleanSchematics(
+async function deleteOldSchematics(
     fromPath: string,
     dataMap: SchematicDataMap,
     lastDataMap: SchematicDataMap
 ) {
-    const jobs = Array.from(lastDataMap.entries()).map(async (entry) => {
-        const [key, item] = entry;
+    await Promise.all(
+        Array.from(lastDataMap.entries()).map(async (entry) => {
+            const [key, item] = entry;
 
-        if (dataMap.has(key)) {
-            return;
-        }
+            if (dataMap.has(key)) {
+                return;
+            }
 
-        const filePath = item.getFilePath(fromPath);
+            const filePath = item.getFilePath(fromPath);
 
-        try {
-            await rm(filePath, {force: true, recursive: true});
-            console.log("Remove schematic", filePath);
-        } catch (error) {
-            console.error("Failed to remove schematic", filePath, error);
-        }
-    });
-
-    await Promise.all(jobs);
+            try {
+                await rm(filePath, {force: true, recursive: true});
+                console.log("Remove schematic", filePath);
+            } catch (error) {
+                console.error("Failed to remove schematic", filePath, error);
+            }
+        })
+    );
 }
 
 async function readData(fromPath: string): Promise<SavedData | null> {
